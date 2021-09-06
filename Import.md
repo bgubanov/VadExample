@@ -18,9 +18,9 @@ Get model and move it to src/main/assets directory (`vad.jit` in this example)
 
 ### Initializing model
 
-To use model we must first initialize Model object of our model
+To use model we must first initialize Model object of our model.
 
-To do it I wrote 2 useful functions
+To do it we can use 2 functions `loadModel()` and `assetFilePath()`
 
 ```kotlin
 private fun loadModule(path: String): Module {

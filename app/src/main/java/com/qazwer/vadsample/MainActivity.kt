@@ -1,4 +1,4 @@
-package com.justai.aimybox.speechkit.justai
+package com.qazwer.vadsample
 
 import android.Manifest
 import android.os.Build

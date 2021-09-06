@@ -1,4 +1,4 @@
-package com.justai.aimybox.speechkit.justai
+package com.qazwer.vadsample
 
 interface RecognitionListener {
     fun onResult(hypothesis: String?)

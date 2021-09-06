@@ -1,4 +1,4 @@
-package com.justai.aimybox.speechkit.justai
+package com.qazwer.vadsample
 
 
 import android.content.Context
@@ -14,15 +14,8 @@ import kotlin.time.ExperimentalTime
 class SpeechService(
     context: Context,
     sampleRate: Int = 16000,
-    val minPredictionSamples: Int = 3,
-    val maxPredictionSamples: Int = 4,
-    private val bufferSize: Int = 4000,
-    private val paddingSize: Int = 3
+    private val bufferSize: Int = 4000
 ) {
-
-    companion object {
-        const val RECOGNIZER_TRESHOLD = 0.6f
-    }
 
     private val recognizer: Recognizer = Recognizer(context)
 
@@ -33,8 +26,6 @@ class SpeechService(
 
     private var recognizerThread: RecognizerThread? = null
     private val mainHandler = Handler(Looper.getMainLooper())
-
-    private var listChunks = mutableListOf<FloatArray>()
 
     init {
         if (recorder.state == AudioRecord.STATE_UNINITIALIZED) {
@@ -59,7 +50,6 @@ class SpeechService(
             recognizerThread!!.interrupt()
             recognizerThread!!.join()
         } catch (e: InterruptedException) {
-            // Restore the interrupted status.
             Thread.currentThread().interrupt()
         }
         recognizerThread = null
@@ -112,24 +102,8 @@ class SpeechService(
                 if (nread < 0) throw RuntimeException("Error reading audio buffer")
                 val floatArray =
                     buffer.map { it.toFloat() / Short.MAX_VALUE.toFloat() }.toFloatArray()
-                listChunks.add(floatArray)
-                when {
-                    !recognizer.checkIfChunkHasVoice(floatArray) -> {
-                        listChunks = listChunks.takeLast(paddingSize).toMutableList()
-                    }
-                    listChunks.size > maxPredictionSamples -> {
-                        listChunks.removeAt(0)
-                    }
-                    listChunks.size > minPredictionSamples -> {
-                        val resultFloatArray = listChunks.reduce { one, another -> one + another }
-                        val result = recognizer.recognize(resultFloatArray)
-                        val text = if (result > RECOGNIZER_TRESHOLD) {
-                            listChunks.clear()
-                            "1"
-                        } else "0"
-                        mainHandler.post { listener.onResult(text) }
-                    }
-                }
+                val text = if (recognizer.checkIfChunkHasVoice(floatArray)) "1" else "0"
+                mainHandler.post { listener.onResult(text) }
             }
             recorder.stop()
         }

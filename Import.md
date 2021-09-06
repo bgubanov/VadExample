@@ -75,7 +75,7 @@ private fun Module.getResult(floatInputBuffer: FloatArray): IValue {
 Usage:
 
 ```kotlin
-    vadModule.getResult(audioInFloatArray)
+vadModule.getResult(audioInFloatArray)
 ```
 where `audioInFloatArray` is a chunk of audio.
 ### Getting probability of speech
@@ -89,3 +89,8 @@ val result = vadModule.getResult(audioInFloatArray)
 val probabilityOfSpeech = result.toTensor().dataAsFloatArray[1]
 ```
 
+## Example
+
+You can get source code of sample app [here]("https://github.com/bgubanov/VadAndroid").
+
+Or you can download app from [here]("https://github.com/bgubanov/VadAndroid").

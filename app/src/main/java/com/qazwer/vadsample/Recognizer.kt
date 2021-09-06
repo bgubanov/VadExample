@@ -1,16 +1,12 @@
-package com.justai.aimybox.speechkit.justai
+package com.qazwer.vadsample
 
 import android.content.Context
-import android.renderscript.Float4
 import android.util.Log
 import org.pytorch.IValue
 import org.pytorch.Module
 import org.pytorch.Tensor
 import java.io.File
 import java.io.FileOutputStream
-import kotlin.math.exp
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 
 class Recognizer(private val context: Context) {
 
@@ -22,39 +18,6 @@ class Recognizer(private val context: Context) {
         loadModule("vad.jit").also {
             Log.d("PyTorch", "Vad module has been initialized")
         }
-    }
-    private val featureExtractorModule: Module by lazy {
-        loadModule("feature_extractor.jit").also {
-            Log.d("PyTorch", "FatureExtractor module has been initialized")
-        }
-    }
-    private val recognizerModule: Module by lazy {
-        loadModule("model.jit").also {
-            Log.d("PyTorch", "Recognizer module has been initialized")
-        }
-    }
-
-    @ExperimentalTime
-    fun recognize(floatInputBuffer: FloatArray): Float {
-        var startTime = System.currentTimeMillis()
-        var resultFeatures: IValue
-        val fTime = measureTime {
-            resultFeatures = featureExtractorModule.getResult(floatInputBuffer)
-        }
-        Log.d("FeatureExtractor", "Start time: $startTime, bufferSize: ${floatInputBuffer.size}, duration: ${fTime}")
-        startTime = System.currentTimeMillis()
-        var result: FloatArray
-        val rTime = measureTime {
-            result = recognizerModule.forward(resultFeatures).toTensor().dataAsFloatArray
-        }
-        Log.d("Spotter", "Start time: $startTime, bufferSize: ${floatInputBuffer.size}, duration: ${rTime}")
-
-        return softMax(result)
-    }
-
-    private fun softMax(result: FloatArray, index: Int = 1): Float {
-        val sum = result.map { exp(it) }.sum()
-        return (exp(result[index]) / sum)
     }
 
     fun checkIfChunkHasVoice(floatInputBuffer: FloatArray): Boolean {

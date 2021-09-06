@@ -9,8 +9,8 @@ repositories {
 }
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.2"
+    compileSdkVersion 31
+    buildToolsVersion "30.0.3"
 
     defaultConfig {
         applicationId "org.pytorch.demo.speechrecognition"
@@ -45,6 +45,4 @@ dependencies {
 
     implementation "androidx.core:core-ktx:+"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation "com.just-ai.aimybox:core:0.16.8"
-
 }

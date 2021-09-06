@@ -1,58 +1,90 @@
-# Speech Recognition on Android with Wav2Vec2
+# Porting VAD to Android application
 
-## Introduction
+## Setting up
 
-Facebook AI's [wav2vec 2.0](https://github.com/pytorch/fairseq/tree/master/examples/wav2vec) is one of the leading models in speech recognition. It is also available in the [Huggingface Transformers](https://github.com/huggingface/transformers) library, which is also used in another PyTorch Android demo app for [Question Answering](https://github.com/pytorch/android-demo-app/tree/master/QuestionAnswering).
+### 1. Setting up PyTorch Android dependency
 
-In this demo app, we'll show how to quantize, trace, and optimize the wav2vec2 model, powered by the newly released torchaudio 0.9.0, and how to use the converted model on an Android demo app to perform speech recognition.
+Insert new line to app level build.gradle file:
 
-## Prerequisites
-
-* PyTorch 1.9.0 and torchaudio 0.9.0 (Optional)
-* Python 3.8 (Optional)
-* Android PyTorch library 1.9.0
-* Android Studio 4.0.1 or later
-
-## Quick Start
-
-### 1. Get the Repo
-
-Simply run the commands below:
-
-```
-git clone https://github.com/pytorch/android-demo-app
-cd android-demo-app/SpeechRecognition
+```kotlin
+ implementation("org.pytorch:pytorch_android:1.9.0")
 ```
 
-If you don't have PyTorch 1.9.0 and torchaudio 0.9.0 installed or want to have a quick try of the demo app, you can download the quantized scripted wav2vec2 model file [here](https://drive.google.com/file/d/1RcCy3K3gDVN2Nun5IIdDbpIDbrKD-XVw/view?usp=sharing), then drag and drop it to the `app/src/main/assets` folder inside  `android-demo-app/SpeechRecognition`, and continue to Step 3.
+### 2. Downloading model
 
-### 2. Prepare the Model
+Get model and move it to src/main/assets directory (`vad.jit` in this example)
 
-To install PyTorch 1.9.0, torchaudio 0.9.0 and the Hugging Face transformers, you can do something like this:
+## Usage
 
+### Initializing model
+
+To use model we must first initialize Model object of our model
+
+To do it I wrote 2 useful functions
+
+```kotlin
+private fun loadModule(path: String): Module {
+    val modulePath = assetFilePath(context, path)
+    val moduleFileAbsoluteFilePath = File(modulePath).absolutePath
+    return Module.load(moduleFileAbsoluteFilePath)
+}
+
+private fun assetFilePath(context: Context, assetName: String): String {
+    val file = File(context.filesDir, assetName)
+    if (file.exists() && file.length() > 0) {
+        return file.absolutePath
+    }
+    context.assets.open(assetName).use { inputStream ->
+        FileOutputStream(file).use { os ->
+            val buffer = ByteArray(4 * 1024)
+            var read: Int
+            while (inputStream.read(buffer).also { read = it } != -1) {
+                os.write(buffer, 0, read)
+            }
+            os.flush()
+        }
+        return file.absolutePath
+    }
+}
 ```
-conda create -n wav2vec2 python=3.8.5
-conda activate wav2vec2
-pip install torch torchaudio
-pip install transformers
+
+Usage:
+
+```kotlin
+private val vadModule: Module by lazy {
+    loadModule("vad.jit").also {
+        Log.d("PyTorch", "Vad module has been initialized")
+    }
+}
 ```
 
-Now with PyTorch 1.9.0 and torchaudio 0.9.0 installed, run the following commands on a Terminal:
+### Getting result from model
 
+To get result from initialized model we can use getResult() function:
+
+```kotlin
+private fun Module.getResult(floatInputBuffer: FloatArray): IValue {
+    val inTensorBuffer = Tensor.allocateFloatBuffer(floatInputBuffer.size)
+    inTensorBuffer.put(floatInputBuffer)
+    val inTensor =
+        Tensor.fromBlob(inTensorBuffer, longArrayOf(1, floatInputBuffer.size.toLong()))
+    return forward(IValue.from(inTensor))
+}
 ```
-python create_wav2vec2.py
+
+Usage:
+
+```kotlin
+vadModule.getResult(audioInFloatArray)
 ```
-This will create the model file `wav2vec2.pt`. Copy it to the Android app:
+where `audioInFloatArray` is a chunk of audio.
+### Getting probability of speech
+
+In our case, model returns an array `[a, b]`, where `a` is probability of not detecting speech
+and `b` is probability of detection speech. So we need to get the second element of this array.
+To do this we can write:
+
+```kotlin
+val result = vadModule.getResult(audioInFloatArray)
+val probabilityOfSpeech = result.toTensor().dataAsFloatArray[1]
 ```
-
-mkdir -p app/src/main/assets
-cp wav2vec2.pt app/src/main/assets
-```
-
-### 2. Build and run with Android Studio
-
-Start Android Studio, open the project located in `android-demo-app/SpeechRecognition`, build and run the app on an Android device. After the app runs, tap the Start button and start saying something; after 12 seconds (you can change `private final static int AUDIO_LEN_IN_SECOND = 12;` in `MainActivity.java` for a shorter or longer recording length), the model will infer to recognize your speech. Some example recognition results are:
-
-![](screenshot1.png)
-![](screenshot2.png)
-![](screenshot3.png)

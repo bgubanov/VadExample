@@ -91,6 +91,6 @@ val probabilityOfSpeech = result.toTensor().dataAsFloatArray[1]
 
 ## Example
 
-You can get source code of sample app [here]("https://github.com/bgubanov/VadExample").
+You can get source code of sample app [here](https://github.com/bgubanov/VadExample).
 
-Or you can download app from [here]("https://github.com/bgubanov/VadExample/blob/demo-vad/demo-vad.apk").
+Or you can download app from [here](https://github.com/bgubanov/VadExample/blob/demo-vad/demo-vad.apk).
